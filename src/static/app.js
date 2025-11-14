@@ -569,6 +569,26 @@ document.addEventListener("DOMContentLoaded", () => {
         `
         }
       </div>
+      <div class="share-buttons">
+        <div class="share-label">Share this activity:</div>
+        <div class="share-buttons-row">
+          <button class="share-button twitter" data-activity="${name}" data-platform="twitter" title="Share on Twitter">
+            𝕏
+          </button>
+          <button class="share-button facebook" data-activity="${name}" data-platform="facebook" title="Share on Facebook">
+            f
+          </button>
+          <button class="share-button linkedin" data-activity="${name}" data-platform="linkedin" title="Share on LinkedIn">
+            in
+          </button>
+          <button class="share-button email" data-activity="${name}" data-platform="email" title="Share via Email">
+            ✉
+          </button>
+          <button class="share-button copy" data-activity="${name}" data-platform="copy" title="Copy link">
+            🔗
+          </button>
+        </div>
+      </div>
     `;
 
     // Add click handlers for delete buttons
@@ -586,6 +606,14 @@ document.addEventListener("DOMContentLoaded", () => {
         });
       }
     }
+
+    // Add click handlers for share buttons
+    const shareButtons = activityCard.querySelectorAll(".share-button");
+    shareButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        handleShare(name, details, button.dataset.platform);
+      });
+    });
 
     activitiesList.appendChild(activityCard);
   }
@@ -854,6 +882,72 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error("Error signing up:", error);
     }
   });
+
+  // Handle social sharing
+  function handleShare(activityName, details, platform) {
+    const activityType = getActivityType(activityName, details.description);
+    const typeInfo = activityTypes[activityType];
+    const formattedSchedule = formatSchedule(details);
+    
+    // Create shareable text
+    const shareText = `Check out ${activityName} at Mergington High School! ${details.description}`;
+    const shareUrl = `${window.location.origin}${window.location.pathname}`;
+    const fullShareText = `${shareText}\nSchedule: ${formattedSchedule}\n${shareUrl}`;
+    
+    // Platform-specific sharing
+    switch (platform) {
+      case "twitter":
+        const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
+        window.open(twitterUrl, "_blank", "width=550,height=420");
+        break;
+        
+      case "facebook":
+        const facebookUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(shareText)}`;
+        window.open(facebookUrl, "_blank", "width=550,height=420");
+        break;
+        
+      case "linkedin":
+        const linkedinUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`;
+        window.open(linkedinUrl, "_blank", "width=550,height=420");
+        break;
+        
+      case "email":
+        const emailSubject = `Join ${activityName} at Mergington High School`;
+        const emailBody = `Hi!\n\nI wanted to share this activity with you:\n\n${activityName}\n${details.description}\n\nSchedule: ${formattedSchedule}\n\nLearn more: ${shareUrl}`;
+        window.location.href = `mailto:?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+        break;
+        
+      case "copy":
+        // Copy to clipboard
+        const textToCopy = `${activityName}\n${details.description}\nSchedule: ${formattedSchedule}\n${shareUrl}`;
+        
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(textToCopy).then(() => {
+            showMessage("Link copied to clipboard!", "success");
+          }).catch((err) => {
+            console.error("Failed to copy:", err);
+            showMessage("Failed to copy link", "error");
+          });
+        } else {
+          // Fallback for older browsers
+          const textArea = document.createElement("textarea");
+          textArea.value = textToCopy;
+          textArea.style.position = "fixed";
+          textArea.style.left = "-999999px";
+          document.body.appendChild(textArea);
+          textArea.select();
+          try {
+            document.execCommand("copy");
+            showMessage("Link copied to clipboard!", "success");
+          } catch (err) {
+            console.error("Failed to copy:", err);
+            showMessage("Failed to copy link", "error");
+          }
+          document.body.removeChild(textArea);
+        }
+        break;
+    }
+  }
 
   // Expose filter functions to window for future UI control
   window.activityFilters = {
